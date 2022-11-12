@@ -1,8 +1,6 @@
 #include "anaDigitizer_update.h"
 // Program to calculate amplitude and charge from the
-
 // TODO
-// * Move the edge FIT of the trigger signal to adjust properly the time alignment
 
 void anaDigitizer_singlePhoton_v1(UInt_t prcEvents = 1000){
 
