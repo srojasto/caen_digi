@@ -7,6 +7,7 @@
 void anaDigitizer_singlePhoton_v1(Int_t prcEvents = -1){
 
   const UInt_t eventSz=1024; // Size of each event
+
   //****************************************************************
   // Signal to analize inicialization
   //****************************************************************
@@ -70,6 +71,12 @@ void anaDigitizer_singlePhoton_v1(Int_t prcEvents = -1){
   TGraph* grAvTrg0 = nullptr;// For the trigger 0 signal
   TGraph* grRawTrg0 = new TGraph(eventSz);
 
+  // create tree file
+   gROOT->cd(); //make sure that the Tree is memory resident
+   TTree *TResults = new TTree("T","test circular buffers");
+   Double_t charge;
+   TResults->Branch("charge",&charge,"charge/D");
+
   // Filling histograms and plots
   for(UInt_t event=0; event < nEvents; event++){
 
@@ -109,7 +116,9 @@ void anaDigitizer_singlePhoton_v1(Int_t prcEvents = -1){
     grType sgProp = GetGrProp(grAv, thrs, sign, Wstart, Wend);
     if(sign<0) h1ampSig->Fill(sign*sgProp.vmin);
     else h1ampSig->Fill(sign*sgProp.vmax);
-    h1charge->Fill(GetCharge(grAv,Wstart, Wend, sign));
+    charge = GetCharge(grAv,Wstart, Wend, sign);
+    h1charge->Fill(charge);
+    TResults->Fill();
     // Quality control histograms
     h1BaseLineAll->Fill(h1Pars.mean);
     h1RMSAll->Fill(h1Pars.rms);
@@ -134,6 +143,14 @@ void anaDigitizer_singlePhoton_v1(Int_t prcEvents = -1){
     }// Keep last hsto for debuging END
 
   } // Fill histograms and plots
+
+  TResults -> Print();
+  // save Tree file
+  // NOTE: to open in the classic root browser -> "root --web=off"
+  TFile fout("output.root","recreate");
+  fout.cd();
+  TResults->Write();
+  fout.Close();
 
   TCanvas * c1 = new TCanvas("c1","c1 title",1600,800);
   c1->Divide(3,1);
