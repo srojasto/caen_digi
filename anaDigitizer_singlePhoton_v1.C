@@ -4,7 +4,7 @@
 // TODO
 // * Move the edge FIT of the trigger signal to adjust properly the time alignment
 
-void anaDigitizer_singlePhoton_v1(UInt_t prcEvents = 10000){
+void anaDigitizer_singlePhoton_v1(UInt_t prcEvents = -1){
 
   const UInt_t eventSz=1024; // Size of each event
   //****************************************************************
@@ -12,13 +12,13 @@ void anaDigitizer_singlePhoton_v1(UInt_t prcEvents = 10000){
   //****************************************************************
   float  buffer[eventSz]; //Buffer to store the event
   FILE *ptr; //Pointer to the file to process
-  const Char_t * file = "/home/timka/bc/test/wave_6.dat"; // File to analize
-  
+  const Char_t * file = "/Users/solangelmac/cernbox/Students/Janek/2300VSmallPMTatt5/wave_0.dat"; // File to analize
+
   // Parameters to analize the signal
-  Double_t Wstart =300; // Start of the time expected of the signal. Begining of the time window to analize the signal.
-  Double_t Wend = 450; // End of the time expected of the signal. End of the time window to analize the signal.
-  Double_t thrs = 10; // Leading edge threshold
-  Int_t sign = 1 ;// Sign fo the signal to analize
+  Double_t Wstart =470; // Start of the time expected of the signal. Begining of the time window to analize the signal.
+  Double_t Wend = 560; // End of the time expected of the signal. End of the time window to analize the signal.
+  Double_t thrs = -15; // Leading edge threshold
+  Int_t sign = -1 ;// Sign fo the signal to analize
 
   // Number of entries for the analized file
   Int_t dataPointSz = sizeof buffer[0];
@@ -35,11 +35,11 @@ void anaDigitizer_singlePhoton_v1(UInt_t prcEvents = 10000){
   //****************************************************************
   float  bufferTrg0[eventSz]; //Buffer to store the event
   FILE *ptrTrg0; //Pointer to the file to process
-  const Char_t * fileTrg0 = "/home/timka/bc/test/TR_0_0.dat"; // Trigger: time reference signal
+  const Char_t * fileTrg0 = "/Users/solangelmac/cernbox/Students/Janek/2300VSmallPMTatt5/TR_0_0.dat"; // Trigger: time reference signal
   // Parameters to analize the signal
-  Double_t WstartTrg0 =225; // Start of the time expected of the signal. Begining of the time window to analize the signal.
-  Double_t WendTrg0 = 240; // End of the time expected of the signal. End of the time window to analize the signal.
-  Double_t thrsTrg0 = 100; // Leading edge threshold
+  Double_t WstartTrg0 = 40; // Start of the time expected of the signal. Begining of the time window to analize the signal.
+  Double_t WendTrg0 = 110; // End of the time expected of the signal. End of the time window to analize the signal.
+  Double_t thrsTrg0 = 200; // Leading edge threshold
   Int_t signTrg0 = 1 ;// Sign fo the signal to analize
 
   // Number of entries for the time reference file
@@ -106,12 +106,12 @@ void anaDigitizer_singlePhoton_v1(UInt_t prcEvents = 10000){
     grType sgProp = GetGrProp(grAv, thrs, sign, Wstart, Wend);
     if(sign<0) h1ampSig->Fill(sign*sgProp.vmin);
     else h1ampSig->Fill(sign*sgProp.vmax);
-    h1charge->Fill(GetCharge(grAv,80, 300, sign));
+    h1charge->Fill(GetCharge(grAv,Wstart, Wend, sign));
     // Quality control histograms
     h1BaseLineAll->Fill(h1Pars.mean);
     h1RMSAll->Fill(h1Pars.rms);
-    
-    h1thrsTime->Fill(GetThrsTime(grAv, 50));
+
+    h1thrsTime->Fill(GetThrsTime(grAv, thrs, sign));
 
     //keep the last graph for debuging
     if(event < nEvents-1){
@@ -192,9 +192,8 @@ void anaDigitizer_singlePhoton_v1(UInt_t prcEvents = 10000){
   //c5 -> cd(1) -> SetLogy();
   //c5 -> cd(2) -> SetLogy();
   h1ampSig->Draw();
-  
+
     TCanvas * c6 = new TCanvas("c6","thrs Time",800,800);
   c6-> SetLogy();
   h1thrsTime->Draw();
 }
-

@@ -113,7 +113,7 @@ grType GetGrProp(TGraph * gr, Double_t threshold = 0, Int_t PulseSign = -1, Doub
         gr->Fit("f","RQ0");
 
         graph.zcross = -f->GetParameter(0)/f->GetParameter(1);
-        cout<< "Trigger   zero crossing time = "<< graph.zcross << "\r";
+        // cout<< "Trigger   zero crossing time = "<< graph.zcross << "\n";
         break;
       }
       //if(graph.y[i] <= threshold && PulseSign == -1){
@@ -125,7 +125,7 @@ grType GetGrProp(TGraph * gr, Double_t threshold = 0, Int_t PulseSign = -1, Doub
         TF1 *f = new TF1("f", "[0]+[1]*x", graph.tmin-8,graph.tmin);
         gr->Fit("f","RQ0");
         graph.zcross = -f->GetParameter(0)/f->GetParameter(1);
-        cout<< "Trigger   zero crossing time = "<< graph.zcross << "\r";
+        // cout<< "Trigger   zero crossing time = "<< graph.zcross << "\n";
         break;
       }
 
@@ -166,13 +166,12 @@ double GetCharge(TGraph * gr, double  WStart=0 ,   double  WEnd = 204.8, int sig
   return charge;
 }
 
-double GetThrsTime(TGraph * gr, Double_t threshold){
+double GetThrsTime(TGraph * gr, Double_t threshold, int position=1){
 	Double_t value;
-	int position=1;
 	Double_t thrsTime=-1000;
-	
-	if(gr->GetPointY(0)>threshold) position=-1;
-	
+
+	//if(gr->GetPointY(0)>threshold) position=-1;
+
 	for(int i = 1; i < gr ->GetN(); i++){
 		value = gr->GetPointY(i);
 		if (value>threshold && position>0){
@@ -184,6 +183,6 @@ double GetThrsTime(TGraph * gr, Double_t threshold){
 			break;
 		}
 	}
-	cout << thrsTime << endl;
+	// cout<< "Time threshold " << thrsTime << ""<< endl;
 	return thrsTime;
 }
