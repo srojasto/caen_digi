@@ -9,22 +9,26 @@
 #include <iostream>
 #include <cstdio>
 
+Double_t timeRes = 1;// 1/5e9 samples/second -> 0.2 nsecons per bit ;
+
 // histograms
 
-TH2 * h2SignalShift = new TH2D("h2SignalShift", "Signal Average shifted; time (ns);Amplitude (mV);",1024*3,-0.2*1024,0.2*1023*2 ,4096*0.24414,-4095*0.24414,4096*0.24414);
-TH2 * h2Signal = new TH2D("h2Signal", "Signal Average; time (ns);Amplitude (mV);", 1024,0,0.2*1023 ,4096*2,-4096*0.24414,4095*0.24414);
+TH2 * h2SignalShift = new TH2D("h2SignalShift", "Signal Average shifted; time (ns);Amplitude (mV);",1024*3,-timeRes*1024,timeRes*1023*2 ,4096*0.24414,-4095*0.24414,4096*0.24414);
+TH2 * h2Signal = new TH2D("h2Signal", "Signal Average; time (ns);Amplitude (mV);", 1024,0,timeRes*1023 ,4096*2,-4096*0.24414,4095*0.24414);
 
 TH1 * h1BaseLineAll = new TH1D("h1BaseLineAll", "Base Line from all events;Base line level (mV);Entries",1024,0,1024);
 TH1 * h1RMSAll = new TH1D("h1RMSAll", "RMS from all events;RMS (mV);Entries",1000,0,100);
-TH1 * h1charge = new TH1D("h1charge", ";Charge (fC);Entries",11000,-100,1000);
-TH1 * h1ampSig = new TH1D("h1ampSig", "Signal;Amplitude (mV);Entries",2000,-1000,1000);
+TH1 * h1charge = new TH1D("h1charge", ";Charge (fC);Entries",20000,-1000,1000);
+TH1 * h1ampSig = new TH1D("h1ampSig", "Signal;Amplitude (mV);Entries",8000,-1000,1000);
 TH1 * h1ampTr1 = new TH1D("h1ampTr1", "Trigger;Amplitude (mV);Entries",2000,-1000,1000);
+
+TH1 * h1thrsTime = new TH1D("h1thrsTime", "Threshold Time;Time (ns);Entries",2000,-1000,1000);
 
 // *************************************************
 //        Variables and structure declarations
 // *************************************************
 Double_t ampRes = 0.244140625;// 1/4096;// amplitude resolution = 0.2 mV per bit (LSB) ;
-Double_t timeRes = 0.2;// 1/5e9 samples/second -> 0.2 nsecons per bit ;
+// for sipm we run at 1GHz -> t=1/1e9 = 1ns
 
 struct h1Type {
     Double_t mean;
@@ -92,7 +96,7 @@ grType GetGrProp(TGraph * gr, Double_t threshold = 0, Int_t PulseSign = -1, Doub
   graph.locmax = TMath::LocMax(graph.n,graph.y);
   graph.locmin = TMath::LocMin(graph.n,graph.y);
 
-  // Get value of the minimum and maximum voltages and time
+  // Get value of the minimum and maximum voltages and time(corresponding to the max and min voltagen)
   graph.vmax = graph.y[graph.locmax];
   graph.vmin = graph.y[graph.locmin];
   graph.tmin = graph.x[graph.locmin];
@@ -106,10 +110,10 @@ grType GetGrProp(TGraph * gr, Double_t threshold = 0, Int_t PulseSign = -1, Doub
       if(graph.y[i] >= threshold && PulseSign == 1){
         // Fit a pol1 function to the signals
         TF1 *f = new TF1("f", "[0]+[1]*x", graph.x[i], graph.x[i]+3);
-        gr->Fit("f","R");
+        gr->Fit("f","RQ0");
 
         graph.zcross = -f->GetParameter(0)/f->GetParameter(1);
-        //cout<< "Trigger   zero crossing time = "<< graph.zcross << endl;
+        cout<< "Trigger   zero crossing time = "<< graph.zcross << "\r";
         break;
       }
       //if(graph.y[i] <= threshold && PulseSign == -1){
@@ -119,9 +123,9 @@ grType GetGrProp(TGraph * gr, Double_t threshold = 0, Int_t PulseSign = -1, Doub
         // gr->Fit("f","R");
         //cout<< "Tmin "<< graph.tmin<< endl;
         TF1 *f = new TF1("f", "[0]+[1]*x", graph.tmin-8,graph.tmin);
-        gr->Fit("f","RQ");
+        gr->Fit("f","RQ0");
         graph.zcross = -f->GetParameter(0)/f->GetParameter(1);
-        //cout<< "Trigger   zero crossing time = "<< graph.zcross << endl;
+        cout<< "Trigger   zero crossing time = "<< graph.zcross << "\r";
         break;
       }
 
@@ -147,17 +151,39 @@ grType GetGrProp(TGraph * gr, Double_t threshold = 0, Int_t PulseSign = -1, Doub
 }
 
 
-double GetCharge(TGraph * gr, double  WStart=0 ,   double  WEnd = 204.8)
+double GetCharge(TGraph * gr, double  WStart=0 ,   double  WEnd = 204.8, int sign=1)
 {
   // Integrate in the interval
   Double_t charge=0;
   Double_t amplitude=0;
   for(int i = 0; i < gr ->GetN(); i++){
-    amplitude = -gr->GetPointY(i);
+    amplitude = sign*gr->GetPointY(i);
     if( (gr->GetPointX(i)>WStart) && (gr->GetPointX(i)<WEnd) ){
-      charge += amplitude*(0.2/50);
+      charge += amplitude*(timeRes/50);
     }
   }
   //cout<<"Charge "<< charge<< endl;
   return charge;
+}
+
+double GetThrsTime(TGraph * gr, Double_t threshold){
+	Double_t value;
+	int position=1;
+	Double_t thrsTime=-1000;
+	
+	if(gr->GetPointY(0)>threshold) position=-1;
+	
+	for(int i = 1; i < gr ->GetN(); i++){
+		value = gr->GetPointY(i);
+		if (value>threshold && position>0){
+			thrsTime=gr->GetPointX(i);
+			break;
+		}
+		else if (value<threshold && position<0){
+			thrsTime=gr->GetPointX(i);
+			break;
+		}
+	}
+	cout << thrsTime << endl;
+	return thrsTime;
 }

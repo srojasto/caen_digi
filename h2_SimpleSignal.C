@@ -15,10 +15,12 @@ std::ifstream::pos_type filesize(const char* filename)
     return in.tellg();
 }
 
-void h2_SimpleSignal(Int_t nEvents = 500, const Char_t * file = "/home/solangel/cernbox/FDDbox/sipm/test/wave_6.dat"){
+void h2_SimpleSignal(Int_t nEvents = -1, const Char_t * file = "/home/timka/bc/test/TR_0_0.dat"){
   const UInt_t eventSz=1024;
   float  buffer[eventSz];
   FILE *ptr;
+
+	float tres=1; //sampling rate = 1GS/s
 
   // Get the size of the file
   // TODO set option for full or par of the file to be analized
@@ -35,10 +37,10 @@ void h2_SimpleSignal(Int_t nEvents = 500, const Char_t * file = "/home/solangel/
   Double_t ampRes = 0.24414;// 1/4098;// amplitude resolution = 0.2 mV per bit (LSB) ;
 
   // TH2 * h2Signal = new TH2D("h2Signal", "Signal Average; time (ns);Amplitude (mV);",512,0,250, 2048,-500,100);
-  TH2 * h2Signal = new TH2D("h2Signal", "Signal Average; time (ns);Amplitude (mV);", 1024,0,0.2*1023 ,4096*2,-4096*0.24414,4095*0.24414);
+  TH2 * h2Signal = new TH2D("h2Signal", "Signal Average; time (ns);Amplitude (mV);", 1024,0,tres*1023 ,4096*2,-4096*0.24414,4095*0.24414);
 
   for (Int_t i = 0; i < eventSz; i++){
-    dt[i]=i*.2;
+    dt[i]=i*tres; 
   }
 
   Int_t nTotalEvents = fSize/(eventSz*dataPointSz);
