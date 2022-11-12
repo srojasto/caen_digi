@@ -4,7 +4,7 @@
 // TODO
 // * Move the edge FIT of the trigger signal to adjust properly the time alignment
 
-void anaDigitizer_singlePhoton_v1(UInt_t prcEvents = -1){
+void anaDigitizer_singlePhoton_v1(Int_t prcEvents = -1){
 
   const UInt_t eventSz=1024; // Size of each event
   //****************************************************************
@@ -24,7 +24,7 @@ void anaDigitizer_singlePhoton_v1(UInt_t prcEvents = -1){
   Int_t dataPointSz = sizeof buffer[0];
   cout <<  "Size of data point: " << sizeof buffer[0] <<" Bytes" << endl;
   Int_t fSize = filesize(file);
-  UInt_t nEvents = fSize/(eventSz*dataPointSz);
+  Int_t nEvents = fSize/(eventSz*dataPointSz);
   //nEvents = 50;
   printf("File size %i Bytes\nEvent size (%i)\nTotal Events(%i): %s\n\n", fSize, eventSz*dataPointSz, nEvents, file);
   ptr = fopen(file,"rb");  // r for read, b for binary
@@ -46,9 +46,10 @@ void anaDigitizer_singlePhoton_v1(UInt_t prcEvents = -1){
   dataPointSz = sizeof bufferTrg0[0];
   cout <<  "Size of data point (Trg0): " << sizeof bufferTrg0[0] <<" Bytes" << endl;
   Int_t fSizeTrg0 = filesize(fileTrg0);
-  UInt_t nEventsTrg0 = fSizeTrg0/(eventSz*dataPointSz);
+  Int_t nEventsTrg0 = fSizeTrg0/(eventSz*dataPointSz);
   nEvents = nEventsTrg0;
   if(prcEvents>0)  nEvents = prcEvents;
+  else nEvents = nEventsTrg0;
 
   printf("File size (Trg0) %i Bytes\nEvent size (%i)\nTotal Events(%i): %s\n\n", fSizeTrg0, eventSz*dataPointSz, nEventsTrg0, fileTrg0);
   ptrTrg0 = fopen(fileTrg0,"rb");  // r for read, b for binary
@@ -60,7 +61,6 @@ void anaDigitizer_singlePhoton_v1(UInt_t prcEvents = -1){
   //Fill in nseconds the time buffer for all the signals
   Double_t dt[eventSz];
   for (UInt_t i = 0; i < eventSz; i++) {dt[i]=i*timeRes;}
-
   Double_t amplitude;
   float RawAmp;
 
@@ -72,6 +72,9 @@ void anaDigitizer_singlePhoton_v1(UInt_t prcEvents = -1){
 
   // Filling histograms and plots
   for(UInt_t event=0; event < nEvents; event++){
+
+    cout << "Event number: " << 100*event/(nEvents+1) << "\% " << event+1 <<"/"<<nEvents << "\r";
+
     // Plots for the signals
     grAv = new TGraph(eventSz);
     grAv -> GetYaxis() -> SetRange(-1000,1000);
@@ -196,4 +199,5 @@ void anaDigitizer_singlePhoton_v1(UInt_t prcEvents = -1){
     TCanvas * c6 = new TCanvas("c6","thrs Time",800,800);
   c6-> SetLogy();
   h1thrsTime->Draw();
+  cout<<endl;
 }
