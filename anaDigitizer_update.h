@@ -21,6 +21,9 @@ TH1 * h1RMSAll = new TH1D("h1RMSAll", "RMS from all events;RMS (mV);Entries",100
 TH1 * h1charge = new TH1D("h1charge", ";Charge (fC);Entries",20000,-1000,1000);
 TH1 * h1ampSig = new TH1D("h1ampSig", "Signal;Amplitude (mV);Entries",8000,-1000,1000);
 TH1 * h1ampTr1 = new TH1D("h1ampTr1", "Trigger;Amplitude (mV);Entries",2000,-1000,1000);
+TH1 * h1ThrsCrosses = new TH1D("h1ThrsCrosses", ";Number of crosses;Entries",100,0,100);
+TH1 * h1Leading10 = new TH1D("h1Leading10", ";Leading time index;Entries",1024,0,1024);
+TH1 * h1timeWidth = new TH1D("h1timeWidth", "; time width (ns);Entries",1024,0,1024*timeRes);
 
 TH1 * h1thrsTime = new TH1D("h1thrsTime", "Threshold Time;Time (ns);Entries",2000,-1000,1000);
 
@@ -34,6 +37,15 @@ struct h1Type {
     Double_t mean;
     Double_t rms;
 };
+
+// Signal time properties
+struct TimeProps {
+    Int_t lead10;
+    Int_t lead90;
+    Int_t trail10;
+    Int_t trail90;
+};
+
 
 // Structure to extract the information of each event
 struct grType {
@@ -166,23 +178,88 @@ double GetCharge(TGraph * gr, double  WStart=0 ,   double  WEnd = 204.8, int sig
   return charge;
 }
 
-double GetThrsTime(TGraph * gr, Double_t threshold, int position=1){
+int GetThrsTime(TGraph * gr, Double_t threshold, int position=1){
 	Double_t value;
-	Double_t thrsTime=-1000;
+	Int_t thrsTime=-1000;
 
 	//if(gr->GetPointY(0)>threshold) position=-1;
 
 	for(int i = 1; i < gr ->GetN(); i++){
 		value = gr->GetPointY(i);
 		if (value>threshold && position>0){
-			thrsTime=gr->GetPointX(i);
+			thrsTime=i;
 			break;
 		}
 		else if (value<threshold && position<0){
-			thrsTime=gr->GetPointX(i);
+			thrsTime=i;
 			break;
 		}
 	}
 	// cout<< "Time threshold " << thrsTime << ""<< endl;
 	return thrsTime;
+}
+
+int ThrsCross(TGraph * gr, Double_t threshold){
+	Double_t value;
+	int countNeg=0, countPos=0, above=0, minTime=10, position=1;
+
+	if(gr->GetPointY(0)>threshold) position=-1;
+
+	for(int i = 1; i < gr ->GetN(); i++){
+		value = gr->GetPointY(i);
+		if (value>threshold){
+      if(above<0) above=0;
+			++above;
+      if(above==minTime) ++countPos;
+		}
+		else if (value<threshold){
+			if(above>0) above=0;
+      --above;
+      if(above==-minTime) ++countNeg;
+		}
+	}
+
+	if(position>0){
+    //cout << "Threshold:" << countPos << endl;
+    return countPos;
+  }
+    //cout << "Threshold:" << countPos << endl;
+  return countNeg;
+}
+
+
+TimeProps GetTimes(TGraph * gr, Double_t threshold, int timeIndex){
+	Double_t value;
+	int position=1, maxVal=0;
+  TimeProps outResults;
+
+	if(gr->GetPointY(0)>threshold) position=-1;
+  for(int i = 1; i < gr ->GetN(); i++){
+		value = gr->GetPointY(i);
+    value = (value-threshold)*position;
+    if(value>maxVal) maxVal=value;
+  }
+
+  int i = timeIndex, first=-1, second=-1, third=-1, fourth=-1;
+	for(; i < gr ->GetN(); ++i){
+		value = gr->GetPointY(i);
+    value = (value-threshold)*position;
+		if(value<0) break;
+    if(value>0.1*maxVal && first==-1) first=i;
+    if(value>0.9*maxVal && second==-1) second=i;
+	}
+  for(--i; i > timeIndex; --i){
+		value = gr->GetPointY(i);
+    value = (value-threshold)*position;
+		if(value<0) break;
+    if(value>0.1*maxVal && fourth==-1) fourth=i;
+    if(value>0.9*maxVal && third==-1) third=i;
+	}
+  outResults.lead10 = first;
+  outResults.lead90 = second;
+  outResults.trail10 = fourth;
+  outResults.trail90 = third;
+
+  cout<< "\n\r Results " <<  first << "\t" << second << "\t" << third << "\t" << fourth << endl;
+	return outResults;
 }

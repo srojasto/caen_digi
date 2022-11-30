@@ -8,6 +8,8 @@ void anaDigitizer_singlePhoton_v1(Int_t prcEvents = -1){
 
   const UInt_t eventSz=1024; // Size of each event
 
+  TimeProps signalTimes;
+
   //****************************************************************
   // Signal to analize inicialization
   //****************************************************************
@@ -123,6 +125,12 @@ void anaDigitizer_singlePhoton_v1(Int_t prcEvents = -1){
     h1BaseLineAll->Fill(h1Pars.mean);
     h1RMSAll->Fill(h1Pars.rms);
 
+    // Timeas' functions
+    h1ThrsCrosses -> Fill(ThrsCross(grAv, thrs));
+    signalTimes = GetTimes(grAv, thrs, GetThrsTime(grAv, thrs, sign));
+    h1Leading10 -> Fill(signalTimes.lead10);
+    h1timeWidth -> Fill( (signalTimes.trail10-signalTimes.lead10)*timeRes);
+
     h1thrsTime->Fill(GetThrsTime(grAv, thrs, sign));
 
     //keep the last graph for debuging
@@ -213,8 +221,18 @@ void anaDigitizer_singlePhoton_v1(Int_t prcEvents = -1){
   //c5 -> cd(2) -> SetLogy();
   h1ampSig->Draw();
 
-    TCanvas * c6 = new TCanvas("c6","thrs Time",800,800);
+  TCanvas * c6 = new TCanvas("c6","thrs Time",800,800);
   c6-> SetLogy();
   h1thrsTime->Draw();
   cout<<endl;
+
+  TCanvas * c7 = new TCanvas("c7","thrs Time cross",800,800);
+  h1ThrsCrosses->Draw();
+
+  TCanvas * c8 = new TCanvas("c8","Leading edge at 10\%",800,800);
+  h1Leading10->Draw();
+
+  TCanvas * c9 = new TCanvas("c9","Time width",800,800);
+  h1timeWidth->Draw();
+
 }
